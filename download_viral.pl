@@ -5,10 +5,10 @@ use Bio::SeqIO;
 use Bio::PrimarySeq;
 
 # create a directory
-unless (-d "viral") {
-        mkdir "viral";
+unless (-d "RefseqG_viral") {
+        mkdir "RefseqG_viral";
 }
-chdir "viral";
+chdir "RefseqG_viral";
 
 # get the assembly file
 if (-e "assembly_summary.txt") {
@@ -35,7 +35,7 @@ while(<IN>) {
 
 	my @d = split(/\t/);
 
-	if ($d[11] eq "Complete Genome") {
+	if ($d[11] ne "assembly_level") {
 		my $ftppath = $d[19];
 
 		# get the unique assembly name

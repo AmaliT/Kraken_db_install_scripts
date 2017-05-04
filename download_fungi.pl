@@ -5,10 +5,10 @@ use Bio::SeqIO;
 use Bio::PrimarySeq;
 
 # create a directory
-unless (-d "fungi") {
-        mkdir "fungi";
+unless (-d "RefseqG_fungi") {
+        mkdir "RefseqG_fungi";
 }
-chdir "fungi";
+chdir "RefseqG_fungi";
 
 # get the assembly file
 if (-e "assembly_summary.txt") {
@@ -29,61 +29,63 @@ while (<IN>) {
 	last;
 }
 
+my $headers=<IN>;
+
 # parse the data
 while(<IN>) {
 	chomp();
 
 	my @d = split(/\t/);
 
-	if ($d[11] eq "Complete Genome") {
-		my $ftppath = $d[19];
+#if ($d[11] eq "Complete Genome") {
+	my $ftppath = $d[19];
 
-		# get the unique assembly name
-		my $aname = basename $ftppath;
+	# get the unique assembly name
+	my $aname = basename $ftppath;
 
-		# construct the full path
-		my $fullpath = "$ftppath" . "/" . $aname . "_genomic.fna.gz";
+	# construct the full path
+	my $fullpath = "$ftppath" . "/" . $aname . "_genomic.fna.gz";
 
-		# download
-		system("wget -q $fullpath");
-		unless (-e "${aname}_genomic.fna.gz") {
-			warn "We don't have ${aname}_genomic.fna.gz, did download fail?";
-			next;
-		}
-
-		# gunzip
-		system("gunzip ${aname}_genomic.fna.gz");
-		unless (-e "${aname}_genomic.fna") {
-			warn "We don't have ${aname}_genomic.fna, did gunzip fail?";
-			next;
-		}
-
-		# get tax id
-		my $taxid = $d[5];
-
-		# add tax id to header in Kraken format
-		my $in = Bio::SeqIO->new(-file => "${aname}_genomic.fna", -format => 'fasta');
-		my $out = Bio::SeqIO->new(-file => ">${aname}_genomic.tax.fna", -format => 'fasta');
-
-		# go through all sequences and add the tax id
-		while(my $seq = $in->next_seq()) {
-
-			# add kraken:taxid to the unique ID
-			my $id = $seq->primary_id;
-			#print "$id\n";
-			$id = $id . '|' . "kraken:taxid" . '|' . $taxid;
-		
-			# create new seq object with updated ID
-			my $newseq = Bio::PrimarySeq->new(-id => $id, -seq => $seq->seq, -desc => $seq->description);
-
-			# write it out
-			$out->write_seq($newseq);
-		}
-
-		# remove original
-		system("rm ${aname}_genomic.fna");
-
+	# download
+	system("wget -q $fullpath");
+	unless (-e "${aname}_genomic.fna.gz") {
+		warn "We don't have ${aname}_genomic.fna.gz, did download fail?";
+		next;
 	}
+
+	# gunzip
+	system("gunzip ${aname}_genomic.fna.gz");
+	unless (-e "${aname}_genomic.fna") {
+		warn "We don't have ${aname}_genomic.fna, did gunzip fail?";
+		next;
+	}
+
+	# get tax id
+	my $taxid = $d[5];
+
+	# add tax id to header in Kraken format
+	my $in = Bio::SeqIO->new(-file => "${aname}_genomic.fna", -format => 'fasta');
+	my $out = Bio::SeqIO->new(-file => ">${aname}_genomic.tax.fna", -format => 'fasta');
+
+	# go through all sequences and add the tax id
+	while(my $seq = $in->next_seq()) {
+
+		# add kraken:taxid to the unique ID
+		my $id = $seq->primary_id;
+		#print "$id\n";
+		$id = $id . '|' . "kraken:taxid" . '|' . $taxid;
+	
+		# create new seq object with updated ID
+		my $newseq = Bio::PrimarySeq->new(-id => $id, -seq => $seq->seq, -desc => $seq->description);
+
+		# write it out
+		$out->write_seq($newseq);
+	}
+
+	# remove original
+	system("rm ${aname}_genomic.fna");
+
+#}
 }
 
 close IN;
